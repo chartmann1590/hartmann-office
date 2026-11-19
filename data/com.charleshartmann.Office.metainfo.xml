@@ -94,6 +94,11 @@
     <value key="org.projectluma.ApplicationContract">0.2</value>
   </custom>
   <releases>
+    <release version="1.1.1" date="2026-11-19">
+      <description>
+        <p>Office Pro Lifetime accepts promotion codes: enter yours on Stripe's checkout page.</p>
+      </description>
+    </release>
     <release version="1.1.0" date="2026-11-19">
       <description>
         <p>Office Pro, an optional purchase: templates, premium slide themes, version history, and headers, footers and page numbers. Everything that was free stays free.</p>

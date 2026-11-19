@@ -35,7 +35,7 @@ from .library import KIND_ICONS, KIND_NAMES, Library  # noqa: E402
 
 APP_ID = "com.charleshartmann.Office"
 APP_NAME = "Hartmann Office"
-VERSION = "1.1.0"
+VERSION = "1.1.1"
 PLACES = (("all", "All files", "folder"), ("document", "Documents", "file-text"),
           ("spreadsheet", "Spreadsheets", "table"), ("presentation", "Presentations", "monitor"),
           ("deleted", "Deleted", "trash-2"))

@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.1 (2026-11-19)
+
+- Office Pro Lifetime accepts promotion codes, entered on Stripe's checkout page; the upgrade panel says
+  where. Codes are checked by Stripe; a completed order unlocks exactly like a paid one.
+
 ## 1.1.0 (2026-11-19)
 
 - Office Pro, an optional purchase through Stripe: templates, premium slide themes, version history, and
