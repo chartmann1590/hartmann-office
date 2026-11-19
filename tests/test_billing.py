@@ -122,3 +122,85 @@ def test_purchase_restore_and_offline_grace():
     b.forget()
     assert not b.owns() and not os.path.exists(path)
     srv.shutdown()
+
+
+
+def test_scoped_lifetime_code_uses_only_the_selected_offer():
+    from importlib import import_module
+    from pathlib import Path
+    from unittest.mock import patch
+
+    hs = import_module(f"{PKG}.hsbilling")
+    email = "fixture@example.com"
+    lifetime, monthly = "fixture_lifetime", "fixture_plus:monthly"
+    fake_session = "cs_test_ScopedLifetimeFixture123"
+    result = {"checkoutUrl": f"https://checkout.stripe.com/c/pay/{fake_session}"}
+    with tempfile.TemporaryDirectory() as tmp:
+        b = hs.Billing("fixture", (lifetime, monthly), str(Path(tmp) / "license.json"))
+        with patch.object(hs, "_request", return_value={"products": {
+            lifetime: {"scoped_promo_codes": True}, monthly: {"promotion_codes": True},
+        }}):
+            cat = b.catalog()
+            assert cat[lifetime]["scoped_promo_codes"] is True
+            assert cat[monthly]["scoped_promo_codes"] is False
+        with patch.object(hs, "_request", return_value=result) as req:
+            assert b.checkout(lifetime, email, "LIFETIMEFIXTURE")[1] == fake_session
+            req.assert_called_once_with("POST", "/v2/checkout", {
+                "app": "fixture", "product": lifetime, "email": email,
+                "promotion_code": "LIFETIMEFIXTURE",
+            })
+        with patch.object(hs, "_request", return_value=result) as req:
+            b.checkout(monthly, email)
+            req.assert_called_once_with("POST", "/v2/checkout", {
+                "app": "fixture", "product": monthly, "email": email,
+            })
+        with patch.object(hs, "_request", return_value={"checkoutUrl": "https://example.invalid/"}):
+            try:
+                b.checkout(lifetime, email, "LIFETIMEFIXTURE")
+            except hs.BillingError as exc:
+                assert exc.code == "checkout"
+            else:
+                raise AssertionError("opened a non-Stripe checkout")
+
+
+def test_lifetime_label_tracks_entitlement_across_restart_and_restore():
+    import ast
+    from importlib import import_module
+    from pathlib import Path
+    from types import SimpleNamespace
+    from unittest.mock import patch
+
+    hs = import_module(f"{PKG}.hsbilling")
+    paywall = Path(__file__).resolve().parents[1] / "src" / PKG / "paywall.py"
+    owned_part, = [n for n in ast.walk(ast.parse(paywall.read_text()))
+                   if isinstance(n, ast.FunctionDef) and n.name == "_owned_part"]
+    # Exercise the actual paywall label code without loading GTK on the CI host.
+    scope = {"PanelRow": lambda label, **kwargs: label}
+    exec(compile(ast.Module(body=[owned_part], type_ignores=[]), str(paywall), "exec"), scope)
+    names = {"earshot": "Earshot Plus", "hoffice": "Office Pro"}
+    name = names[PKG]
+    lifetime, monthly = "fixture_lifetime", "fixture_plus:monthly"
+    email = "fixture@example.com"
+    license_doc = {"email": email, "licenseToken": token(int(time.time()) + 600),
+                   "entitlements": [lifetime], "revalidateAfter": int(time.time()) + 600}
+
+    def labels(billing):
+        view = SimpleNamespace(box=[], billing=billing, name=name, _words=lambda s: s,
+                               restore=lambda: None, manage=lambda: None)
+        scope["_owned_part"](view)
+        return view.box
+
+    with tempfile.TemporaryDirectory() as tmp:
+        path = Path(tmp) / "session.json"
+        b = hs.Billing("fixture", (lifetime, monthly), str(path))
+        with patch.object(hs, "_request", return_value={"pending": True, "entitlements": []}):
+            assert not b.session("cs_test_FixturePending") and not b.owns()
+        with patch.object(hs, "_request", return_value=license_doc):
+            assert b.session("cs_test_FixtureSettled") and b.owns(lifetime) and not b.owns(monthly)
+            clean = hs.Billing("fixture", (lifetime, monthly), str(Path(tmp) / "fresh.json"))
+            assert not clean.owns()
+            assert clean.restore(email) and clean.owns(lifetime) and not clean.owns(monthly)
+        reopened = hs.Billing("fixture", (lifetime, monthly), str(path))
+        for billing in (reopened, clean):
+            assert f"Purchased: {name} (Lifetime)" in labels(billing)
+            assert "Manage or cancel your subscription" not in labels(billing)

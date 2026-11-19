@@ -11,6 +11,10 @@ No GTK and no Stripe key in here. The flow, the same as the studio's Android "di
    own folder. `restore(email)` asks again by email on another device; the server rate-limits that.
 4. `portal()` returns Stripe's own page for cancelling or changing a subscription.
 
+Promotion codes are typed on Stripe's checkout page, never in the app: the server turns them on for the products it
+allows (the catalog marks those `promotion_codes`), Stripe checks each code, and a completed order (paid, or free with
+a 100%-off code) unlocks exactly as a paid one does.
+
 Offline, a license keeps working until 14 days past its expiry, then the extras lock until it can be renewed.
 """
 from __future__ import annotations
@@ -161,17 +165,25 @@ class Billing:
             d = p.get("display")
             d = d if isinstance(d, dict) else {"label": str(d or key)}
             out[key] = {"label": d.get("label") or key, "amount": d.get("amount"), "interval": d.get("interval"),
-                        "trial_days": int(p.get("trial_days") or 0), "mode": p.get("mode") or ""}
+                        "trial_days": int(p.get("trial_days") or 0), "mode": p.get("mode") or "",
+                        # The server says so when its Stripe Checkout for this product accepts a promotion code.
+                        # Stripe checks the code; the app only tells people where to type it.
+                        "promo_codes": bool(p.get("promotion_codes") or d.get("promotion_codes")),
+                        "scoped_promo_codes": p.get("scoped_promo_codes") is True}
         return out
 
-    def checkout(self, product: str, email: str) -> tuple[str, str]:
+    def checkout(self, product: str, email: str, promotion_code: str = "") -> tuple[str, str]:
         """(checkout page address, session id)."""
         email = email.strip()
         if not EMAIL_RE.match(email):
             raise BillingError("Enter the email you want your receipt and license sent to.", "email")
-        doc = _request("POST", "/v2/checkout", {"app": self.app, "product": product, "email": email})
+        body = {"app": self.app, "product": product, "email": email}
+        if promotion_code:
+            body["promotion_code"] = promotion_code
+        doc = _request("POST", "/v2/checkout", body)
         url = doc.get("checkoutUrl") or ""
-        if not url.startswith("https://"):
+        if not url.startswith("https://") or (promotion_code and
+                urllib.parse.urlsplit(url).netloc != "checkout.stripe.com"):
             raise BillingError("Couldn't open checkout. Try again.", "checkout")
         m = SESSION_RE.search(url)
         with self._lock:
