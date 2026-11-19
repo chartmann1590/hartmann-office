@@ -47,4 +47,4 @@ No network, no filesystem access.
 - **Category:** Work (Office)
 - **Licence:** GPL-3.0-or-later
 - **Content rating:** OARS 1.1, no objectionable content
-- **Screenshots:** `screenshots/document.png`, `spreadsheet.png`, `presentation.png`, `phone.png`
+- **Screenshots:** `screenshots/document.png`, `spreadsheet.png`, `presentation.png` (computer), `tablet.png`, `phone.png`, `tv.png`

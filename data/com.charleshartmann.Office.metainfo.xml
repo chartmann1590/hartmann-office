@@ -65,8 +65,16 @@
       <image>https://raw.githubusercontent.com/chartmann1590/hartmann-office/main/screenshots/presentation.png</image>
     </screenshot>
     <screenshot>
-      <caption>The same app on a phone</caption>
+      <caption>On a tablet: a spreadsheet with touch</caption>
+      <image>https://raw.githubusercontent.com/chartmann1590/hartmann-office/main/screenshots/tablet.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>On a phone: writing a document</caption>
       <image>https://raw.githubusercontent.com/chartmann1590/hartmann-office/main/screenshots/phone.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>On a TV: a presentation on the big screen</caption>
+      <image>https://raw.githubusercontent.com/chartmann1590/hartmann-office/main/screenshots/tv.png</image>
     </screenshot>
   </screenshots>
   <requires>

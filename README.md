@@ -29,15 +29,34 @@ Built with LumaUI, it fits a computer, a tablet, a phone and a TV (it's on Luma'
       doubles as the formula bar.</td>
   </tr>
   <tr>
-    <td><img src="screenshots/presentation.png" alt="Editing a slide"></td>
-    <td align="center"><img src="screenshots/phone.png" alt="The same app on a phone" height="330"></td>
+    <td colspan="2"><img src="screenshots/presentation.png" alt="Editing a slide"></td>
   </tr>
   <tr>
     <td><b>Presentations</b>: title, points and section slides; five themes; speaker notes;
       full screen Present mode.</td>
-    <td><b>Everywhere</b>: the same app on a phone, with touch, pointer and keyboard.</td>
+    <td><b>Everywhere</b>: the same app on a computer, a tablet, a phone and a TV, with touch, pointer,
+      keyboard and remote.</td>
   </tr>
 </table>
+
+### On every Luma device
+
+<table>
+  <tr>
+    <th>Tablet</th><th>Phone</th>
+  </tr>
+  <tr>
+    <td width="70%"><img src="screenshots/tablet.png" alt="Hartmann Office on a tablet: a spreadsheet"></td>
+    <td width="30%" align="center"><img src="screenshots/phone.png" alt="Hartmann Office on a phone: a document" height="380"></td>
+  </tr>
+  <tr>
+    <th colspan="2">TV</th>
+  </tr>
+  <tr>
+    <td colspan="2"><img src="screenshots/tv.png" alt="Hartmann Office on a TV: a presentation"></td>
+  </tr>
+</table>
+
 
 ### Files
 
