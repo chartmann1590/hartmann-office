@@ -118,6 +118,8 @@ class Window(AppWindow):
         # The island: an editor, or an empty state.
         self.island = Island()
         self.stack = Gtk.Stack(hexpand=True, vexpand=True, transition_type=Gtk.StackTransitionType.CROSSFADE)
+        from luma_appkit.lumaui import reduced_motion
+        self.stack.set_transition_duration(0 if reduced_motion() else 160)  # no fade when motion is reduced
         self.empty = EmptyState("Nothing open", "Make something new, or open a file from another app.",
                                 "lumaui-square-pen-symbolic", primary=("New document", lambda: self.new_file("document")),
                                 secondary=("Open…", self.open_file))
