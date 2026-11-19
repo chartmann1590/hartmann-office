@@ -10,6 +10,7 @@ import traceback
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 os.environ.setdefault("XDG_DATA_HOME", tempfile.mkdtemp())
 os.environ["HS_BILLING_URL"] = "http://127.0.0.1:1"   # no store in tests
+os.environ["HS_UPDATES_API"] = "http://127.0.0.1:1"   # never reach GitHub from tests
 
 import gi  # noqa: E402
 
@@ -285,8 +286,90 @@ def t_pro():
     assert done.get("ok")
 
 
+def _texts(widget):
+    """Every label's text under a widget (for asserting what a panel says)."""
+    from gi.repository import Gtk
+    out, stack = [], [widget]
+    while stack:
+        w = stack.pop()
+        if isinstance(w, Gtk.Label):
+            out.append(w.get_text())
+        c = w.get_first_child()
+        while c is not None:
+            stack.append(c)
+            c = c.get_next_sibling()
+    return " | ".join(out)
+
+
+def _spin(seconds):
+    import time as _t
+    from gi.repository import GLib as _G
+    end = _t.monotonic() + seconds
+    while _t.monotonic() < end:
+        _G.MainContext.default().iteration(False)
+        _t.sleep(0.005)
+
+
+def _until(cond, seconds):
+    import time as _t
+    end = _t.monotonic() + seconds
+    while _t.monotonic() < end:
+        _spin(0.05)
+        if cond():
+            return True
+    return False
+
+
+def updates_flow(w):
+    """The update panel against a LOCAL FAKE GitHub: GitHub build downloads + verifies; Depot build doesn't."""
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import test_updates as tu
+    srv, _u = tu.setup("github")
+    try:
+        tu.STATE["tag"] = "v1.3.0"
+        w.updates.channel, w.updates.state = "github", {}
+        w.updater.release = None
+        w.updater.check(manual=True)
+        assert _until(lambda: w.center.grown == "updates", 15), "panel didn't open"
+        text = _texts(w.updater.box)
+        assert "1.3.0 is available" in text and "Faster" in text and "Download and install" in text, text
+        w.updater._download()
+        assert _until(lambda: bool(w.updater.downloaded), 20), (w.updater.error, w.updater.downloading)
+        assert open(w.updater.downloaded, "rb").read() == tu.BUNDLE
+        assert "Open the installer" in _texts(w.updater.box)
+        w.center.fold()
+        _spin(0.3)
+        # a Depot build: notes, but no GitHub download
+        w.updates.channel, w.updater.downloaded = "depot", ""
+        w.updater.open()
+        _spin(0.5)
+        text = _texts(w.updater.box)
+        assert "Depot" in text and "Download and install" not in text, text
+        w.updater._skip()
+        assert w.updates.skipped("1.3.0")
+        w.center.fold()
+    finally:
+        srv.shutdown()
+
+
+def t_updates():
+    from hoffice import app as A
+    application = Adw.Application(application_id="com.charleshartmann.OfficeUpdatesTest")
+    done = {}
+
+    def act(a):
+        try:
+            updates_flow(A.Window(a))
+            done["ok"] = True
+        finally:
+            a.quit()
+    application.connect("activate", act)
+    application.run([])
+    assert done.get("ok")
+
+
 for name, fn in (("documents", t_writer), ("spreadsheets", t_sheet), ("presentations", t_slides),
-                 ("library and PDF", t_library_and_pdf), ("window", t_window), ("Office Pro", t_pro)):
+                 ("library and PDF", t_library_and_pdf), ("window", t_window), ("Office Pro", t_pro), ("updates", t_updates)):
     check(name, fn)
 
 bad = 0

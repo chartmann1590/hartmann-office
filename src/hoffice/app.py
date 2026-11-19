@@ -30,12 +30,14 @@ from luma_appkit.action_bubble import MenuItem  # noqa: E402
 
 from . import odf, render, templates  # noqa: E402
 from .hsbilling import Billing  # noqa: E402
+from .hsupdates import Updates  # noqa: E402
+from .updates_ui import Updater  # noqa: E402
 from .paywall import Paywall  # noqa: E402
 from .library import KIND_ICONS, KIND_NAMES, Library  # noqa: E402
 
 APP_ID = "com.charleshartmann.Office"
 APP_NAME = "Hartmann Office"
-VERSION = "1.1.1"
+VERSION = "1.2.0"
 PLACES = (("all", "All files", "folder"), ("document", "Documents", "file-text"),
           ("spreadsheet", "Spreadsheets", "table"), ("presentation", "Presentations", "monitor"),
           ("deleted", "Deleted", "trash-2"))
@@ -106,6 +108,9 @@ class Window(AppWindow):
                 Command("file.delete", "Move to Deleted", self.ask_delete, icon="trash-2", destructive=True,
                         enabled=lambda: self.entry is not None and not self.entry.deleted),
             )),
+            CommandGroup("App", (
+                Command("app.updates", "Check for updates…", lambda: self.updater.open(), icon="refresh-cw"),
+            )),
             CommandGroup(PRO, (
                 Command("pro.open", f"{PRO}…", lambda: self.open_pro(), icon="sparkles"),
                 Command("pro.template", "New from a template…", lambda: self.ask_template(), icon="layout-template"),
@@ -173,6 +178,14 @@ class Window(AppWindow):
         if self.billing.needs_revalidation():
             import threading
             threading.Thread(target=self.billing.revalidate, daemon=True).start()
+        self.updates = Updates(APP_ID, "chartmann1590/hartmann-office", VERSION,
+                               os.path.join(self.library.root, "updates.json"),
+                               os.path.join(GLib.get_user_cache_dir(), "hartmann-office", "updates"))
+        self.updater = Updater(self, self.updates, APP_NAME, grow=lambda k, w: self.center.grow(k, w, wide=True),
+                               fold=lambda: self.center.fold(),
+                               toast=lambda t, k="done", action=None: Toast.show(self.host, t, kind=k,
+                                                                               **({"action": action} if action else {})))
+        GLib.timeout_add_seconds(8, self.updater.start)
         self.refresh()
         recent = self.library.list()
         if recent:
@@ -786,6 +799,7 @@ class Window(AppWindow):
             BarAction("file-text", "Header, footer and page numbers…", on_activate=self.ask_page_setup),
             BarAction("history", "Version history…", on_activate=self.ask_versions),
             BarAction("sparkles", f"{PRO}…", on_activate=self.open_pro),
+            BarAction("download", "Check for updates…", on_activate=lambda: self.updater.open()),
         ])
 
     def _toggle_page(self):
