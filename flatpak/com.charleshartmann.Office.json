@@ -1,0 +1,35 @@
+{
+  "id": "com.charleshartmann.Office",
+  "runtime": "org.projectluma.Platform",
+  "runtime-version": "44",
+  "sdk": "org.projectluma.Sdk",
+  "command": "run-app",
+  "finish-args": [
+    "--share=ipc",
+    "--socket=wayland",
+    "--socket=fallback-x11",
+    "--device=dri"
+  ],
+  "modules": [
+    {
+      "name": "hartmann-office",
+      "buildsystem": "simple",
+      "build-commands": [
+        "install -Dm755 run-app /app/bin/run-app",
+        "install -Dm644 src/main.py /app/share/com.charleshartmann.Office/main.py",
+        "install -d /app/share/com.charleshartmann.Office/hoffice",
+        "install -Dm644 src/hoffice/*.py src/hoffice/*.css -t /app/share/com.charleshartmann.Office/hoffice/",
+        "install -Dm644 data/com.charleshartmann.Office.desktop /app/share/applications/com.charleshartmann.Office.desktop",
+        "install -Dm644 data/com.charleshartmann.Office.metainfo.xml /app/share/metainfo/com.charleshartmann.Office.metainfo.xml",
+        "install -Dm644 data/com.charleshartmann.Office.svg /app/share/icons/hicolor/scalable/apps/com.charleshartmann.Office.svg"
+      ],
+      "sources": [
+        {
+          "type": "git",
+          "url": "https://github.com/chartmann1590/hartmann-office.git",
+          "commit": "COMMIT_PLACEHOLDER"
+        }
+      ]
+    }
+  ]
+}

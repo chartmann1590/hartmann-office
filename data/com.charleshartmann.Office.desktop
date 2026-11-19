@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=Hartmann Office
+GenericName=Office Suite
+Comment=Write documents, work out numbers and give presentations
+Exec=run-app %U
+Icon=com.charleshartmann.Office
+Terminal=false
+DBusActivatable=false
+StartupNotify=true
+Categories=Office;WordProcessor;Spreadsheet;Presentation;
+Keywords=document;word;writer;spreadsheet;sheet;budget;formula;presentation;slides;odt;ods;odp;csv;
+MimeType=application/vnd.oasis.opendocument.text;application/vnd.oasis.opendocument.spreadsheet;application/vnd.oasis.opendocument.presentation;text/csv;text/markdown;

@@ -1,0 +1,11 @@
+/* Hartmann Office: only our own content, under our own prefix. Colours are LumaUI tokens. */
+.hoffice-page text {
+  background-color: transparent;
+  color: @luma_ink;
+}
+.hoffice-page text selection {
+  background-color: @luma_accent_soft;
+}
+.hoffice-presenter {
+  background-color: black;
+}

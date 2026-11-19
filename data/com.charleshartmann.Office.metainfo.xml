@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>com.charleshartmann.Office</id>
+  <name>Hartmann Office</name>
+  <summary>Documents, spreadsheets and presentations</summary>
+  <description>
+    <p>
+      Hartmann Office is an office suite made for Luma. Write a document, work out a budget or put
+      together a talk in one app that fits on a computer, a tablet and a phone.
+    </p>
+    <ul>
+      <li>Documents: titles, headings, lists, quotes, bold, italic, underline and alignment, with a live word count and find and replace</li>
+      <li>Spreadsheets: formulas with more than 50 functions, several sheets, number formats, sorting, fill down and copy and paste between cells</li>
+      <li>Presentations: title, points and section slides in five themes, speaker notes, and a full screen Present mode</li>
+      <li>Open and save OpenDocument files (.odt, .ods, .odp) that other office apps read, plus CSV and Markdown</li>
+      <li>Export any file as a PDF, or print it</li>
+      <li>Everything saves as you go, and deleted files wait 30 days in Deleted before they are gone</li>
+    </ul>
+    <p>
+      Hartmann Office works offline, has no account and collects nothing. Your files stay on your device
+      unless you choose to save a copy somewhere else.
+    </p>
+  </description>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <developer id="com.charleshartmann">
+    <name>Hartmann Studios</name>
+  </developer>
+  <url type="homepage">https://github.com/chartmann1590/hartmann-office</url>
+  <url type="help">https://github.com/chartmann1590/hartmann-office#readme</url>
+  <url type="bugtracker">https://github.com/chartmann1590/hartmann-office/issues</url>
+  <url type="vcs-browser">https://github.com/chartmann1590/hartmann-office</url>
+  <launchable type="desktop-id">com.charleshartmann.Office.desktop</launchable>
+  <provides>
+    <binary>run-app</binary>
+    <mediatype>application/vnd.oasis.opendocument.text</mediatype>
+    <mediatype>application/vnd.oasis.opendocument.spreadsheet</mediatype>
+    <mediatype>application/vnd.oasis.opendocument.presentation</mediatype>
+    <mediatype>text/csv</mediatype>
+  </provides>
+  <categories>
+    <category>Office</category>
+    <category>WordProcessor</category>
+    <category>Spreadsheet</category>
+    <category>Presentation</category>
+  </categories>
+  <keywords>
+    <keyword>document</keyword>
+    <keyword>spreadsheet</keyword>
+    <keyword>presentation</keyword>
+    <keyword>slides</keyword>
+    <keyword>budget</keyword>
+  </keywords>
+  <screenshots>
+    <screenshot type="default">
+      <caption>Write a document with headings, lists and formatting</caption>
+      <image>https://raw.githubusercontent.com/chartmann1590/hartmann-office/main/screenshots/document.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Work out a budget with formulas</caption>
+      <image>https://raw.githubusercontent.com/chartmann1590/hartmann-office/main/screenshots/spreadsheet.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Build slides and present them full screen</caption>
+      <image>https://raw.githubusercontent.com/chartmann1590/hartmann-office/main/screenshots/presentation.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>The same app on a phone</caption>
+      <image>https://raw.githubusercontent.com/chartmann1590/hartmann-office/main/screenshots/phone.png</image>
+    </screenshot>
+  </screenshots>
+  <requires>
+    <display_length compare="ge">360</display_length>
+  </requires>
+  <supports>
+    <control>pointing</control>
+    <control>keyboard</control>
+    <control>touch</control>
+  </supports>
+  <custom>
+    <value key="org.projectluma.ApplicationContract">0.2</value>
+  </custom>
+  <releases>
+    <release version="1.0.0" date="2026-11-18">
+      <description>
+        <p>The first release: documents, spreadsheets and presentations, OpenDocument files, PDF export and printing.</p>
+      </description>
+    </release>
+  </releases>
+  <content_rating type="oars-1.1"/>
+</component>
