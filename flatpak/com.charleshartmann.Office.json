@@ -21,7 +21,9 @@
         "install -Dm644 src/hoffice/*.py src/hoffice/*.css -t /app/share/com.charleshartmann.Office/hoffice/",
         "install -Dm644 data/com.charleshartmann.Office.desktop /app/share/applications/com.charleshartmann.Office.desktop",
         "install -Dm644 data/com.charleshartmann.Office.metainfo.xml /app/share/metainfo/com.charleshartmann.Office.metainfo.xml",
-        "install -Dm644 data/com.charleshartmann.Office.svg /app/share/icons/hicolor/scalable/apps/com.charleshartmann.Office.svg"
+        "install -Dm644 data/com.charleshartmann.Office.svg /app/share/icons/hicolor/scalable/apps/com.charleshartmann.Office.svg",
+        "install -Dm644 data/com.charleshartmann.Office-tv.svg /app/share/icons/hicolor/scalable/apps/com.charleshartmann.Office-tv.svg",
+        "install -Dm644 data/com.charleshartmann.Office-tv.svg /app/share/luma-tv/com.charleshartmann.Office-tv.svg"
       ],
       "sources": [
         {

@@ -12,7 +12,7 @@
 # Hartmann Office
 
 **Documents, spreadsheets and presentations in one app made for [Luma](https://simplyluma.com).**
-Built with LumaUI, it fits a computer, a tablet and a phone. It works offline, needs no account and collects nothing.
+Built with LumaUI, it fits a computer, a tablet, a phone and a TV (it's on Luma's TV home). It works offline, needs no account and collects nothing.
 
 ## Features
 

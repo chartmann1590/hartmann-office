@@ -11,3 +11,6 @@ StartupNotify=true
 Categories=Office;WordProcessor;Spreadsheet;Presentation;
 Keywords=document;word;writer;spreadsheet;sheet;budget;formula;presentation;slides;odt;ods;odp;csv;
 MimeType=application/vnd.oasis.opendocument.text;application/vnd.oasis.opendocument.spreadsheet;application/vnd.oasis.opendocument.presentation;text/csv;text/markdown;
+X-Luma-TV=true
+X-Luma-TV-Tile=com.charleshartmann.Office-tv
+X-Luma-TV-Presentation=fullscreen

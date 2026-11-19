@@ -38,3 +38,8 @@ keyboard = true
 semantics = true
 reduced_motion = true
 evidence = "verification/luma-native-evidence.json"
+
+[tv]
+supported = true
+tile = "data/com.charleshartmann.Office-tv.svg"
+presentation = "fullscreen"
