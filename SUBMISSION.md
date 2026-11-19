@@ -17,8 +17,8 @@ for the publisher (Hartmann Studios).
 | `luma release-check` | **fails until real conformance evidence exists**: it wants evidence from Luma's SDK test-image lanes on `x86_64` *and* `aarch64`, desktop and mobile. The tests above ran on both architectures, but not in those lanes, so the evidence file is left honest (all false); never fill it in by hand. |
 
 Permissions the app asks for: showing a window (`--share=ipc`, `--socket=wayland`, `--socket=fallback-x11`,
-`--device=dri`) and **the internet** (`--share=network`), used only for the optional Office Pro purchase (prices,
-checkout and license checks; see `PRIVACY.md`). Files come and go through the file chooser and print portals; no
+`--device=dri`) and **the internet** (`--share=network`), used for the optional Office Pro purchase (prices, checkout
+and license checks) and update checks against GitHub releases (see `PRIVACY.md`). Files come and go through the file chooser and print portals; no
 filesystem access.
 
 ## Packages

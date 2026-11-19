@@ -118,13 +118,21 @@ class Paywall:
             b.append(PanelRow("Try again", icon="refresh-cw", closes=False, on_activate=self._retry_catalog))
         else:
             b.append(PanelHeading("Choose"))
+            promo = []
             for key in self.billing.products[::-1]:  # monthly, yearly, then once (cheapest first)
                 p = self.catalog.get(key)
                 if p is None:
                     continue
-                b.append(PanelRow(p["label"], icon="sparkles", subtitle=price_words(p), closes=False,
+                words = price_words(p)
+                if p.get("promo_codes"):
+                    words += " · codes accepted"
+                    promo.append(p["label"])
+                b.append(PanelRow(p["label"], icon="sparkles", subtitle=words, closes=False,
                                   on_activate=lambda k=key: self.buy(k)))
             b.append(self.email_field)
+            if promo:
+                b.append(self._words(f"Have a promotion code? Choose {promo[0] if len(promo) == 1 else 'an option marked codes accepted'} "
+                                     "and enter the code on Stripe's checkout page, under the price."))
             b.append(self._words("Checkout opens in your browser and is run by Stripe. Your email goes to the "
                                  "Hartmann Studios license server and to Stripe, for your receipt and license. "
                                  "Subscriptions renew until you cancel, which you can do here at any time."))
