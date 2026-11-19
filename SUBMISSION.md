@@ -23,14 +23,14 @@ filesystem access.
 
 ## Packages
 
-Depot takes a package per architecture. Both are attached to the GitHub release
-[v1.0.0](https://github.com/chartmann1590/hartmann-office/releases/tag/v1.0.0), built with the official Flatpak builder from the
+Depot takes a package per architecture. Both are built with the official Flatpak builder from the
 commit the manifest pins, installed and tested on each architecture:
 
-- `com.charleshartmann.Office-1.0.0-x86_64.flatpak`: computers
-- `com.charleshartmann.Office-1.0.0-aarch64.flatpak`: phones, tablets and ARM computers
+- `com.charleshartmann.Office-1.1.0-x86_64.flatpak`: computers
+- `com.charleshartmann.Office-1.1.0-aarch64.flatpak`: phones, tablets and ARM computers
 
-`SHA256SUMS` sits beside them. Upload both in Connect.
+They are in `~/luma-apps/bundles/` with `SHA256SUMS`; they go on the GitHub release v1.1.0 once purchases are
+open on the license server (see Billing). Upload both in Connect.
 
 ## Steps
 
