@@ -101,7 +101,7 @@
     </release>
     <release version="1.1.1" date="2026-11-19">
       <description>
-        <p>Office Pro Lifetime accepts promotion codes: enter yours on Stripe's checkout page.</p>
+        <p>When the store offers promotion codes for Office Pro Lifetime, the upgrade panel says so; codes are entered on Stripe's checkout page.</p>
       </description>
     </release>
     <release version="1.1.0" date="2026-11-19">
