@@ -14,11 +14,22 @@ for the publisher (Hartmann Studios).
 | `flatpak-builder-lint manifest` (real manifest, GitHub URL, pinned commit) | passed |
 | Build with `org.flatpak.Builder` 1.4.12 on `org.projectluma.Platform//44`, installed and run in its sandbox | passed |
 | Unit tests (formula engine, OpenDocument round trips) and UI tests in the Luma runtime | 13 + 5 passed |
-| `luma release-check` | **fails, as Luma says it will for every app today**: it needs real evidence on x86_64 *and* aarch64, and Luma isn't built for aarch64 yet. The evidence file is left honest (all false); never fill it in by hand. |
+| `luma release-check` | **fails until real conformance evidence exists**: it wants evidence from Luma's SDK test-image lanes on `x86_64` *and* `aarch64`, desktop and mobile. The tests above ran on both architectures, but not in those lanes, so the evidence file is left honest (all false); never fill it in by hand. |
 
 Permissions the app asks for: none beyond showing a window (`--share=ipc`, `--socket=wayland`,
 `--socket=fallback-x11`, `--device=dri`). Files come and go through the file chooser and print portals.
 No network, no filesystem access.
+
+## Packages
+
+Depot takes a package per architecture. Both are attached to the GitHub release
+[v1.0.0](https://github.com/chartmann1590/hartmann-office/releases/tag/v1.0.0), built with the official Flatpak builder from the
+commit the manifest pins, installed and tested on each architecture:
+
+- `com.charleshartmann.Office-1.0.0-x86_64.flatpak`: computers
+- `com.charleshartmann.Office-1.0.0-aarch64.flatpak`: phones, tablets and ARM computers
+
+`SHA256SUMS` sits beside them. Upload both in Connect.
 
 ## Steps
 
