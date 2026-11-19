@@ -56,6 +56,7 @@ class Writer(Gtk.Box):
         keys = Gtk.EventControllerKey(propagation_phase=Gtk.PropagationPhase.CAPTURE)
         keys.connect("key-pressed", self._key)
         self.view.add_controller(keys)
+        self.buffer.connect("insert-text", self._inserting)
         self.buffer.connect_after("insert-text", self._inserted)
         self.buffer.connect("changed", self._changed)
         self.buffer.connect("mark-set", self._mark_set)
@@ -82,6 +83,9 @@ class Writer(Gtk.Box):
         t("k:number", left_margin=30, indent=-20)
         t("k:p", pixels_below_lines=6)
         t("marker", editable=False)
+        # The last paragraph ends in a hidden newline, so even an empty last line has a character
+        # to carry its paragraph style (GTK tags need at least one character).
+        t("sentinel", editable=False, invisible=True)
         t("a:center", justification=Gtk.Justification.CENTER)
         t("a:end", justification=Gtk.Justification.RIGHT)
         t("a:justify", justification=Gtk.Justification.FILL)
@@ -102,7 +106,7 @@ class Writer(Gtk.Box):
         return "p"
 
     def line_align(self, line: int) -> str:
-        start = self.buffer.get_iter_at_line(line)[1]
+        start = self._marker_end(line)
         for a in ("center", "end", "justify"):
             if start.has_tag(self.tags.lookup("a:" + a)):
                 return a
@@ -142,10 +146,13 @@ class Writer(Gtk.Box):
                 self.buffer.apply_tag_by_name("a:" + align, start, end2)
 
     def _insert_marker(self, line: int, text: str):
+        # GTK takes a paragraph's justification and margins from its first character: the marker
+        # carries the line's kind and alignment.
+        kind, align = self.line_kind(line), self.line_align(line)
         it = self.buffer.get_iter_at_line(line)[1]
-        kind = self.line_kind(line)
+        tags = ["marker", "k:" + kind] + (["a:" + align] if align != "start" else [])
         self._loading, was = True, self._loading
-        self.buffer.insert_with_tags_by_name(it, text, "marker", "k:" + kind)
+        self.buffer.insert_with_tags_by_name(it, text, *tags)
         self._loading = was
 
     def _remove_marker(self, line: int):
@@ -160,7 +167,7 @@ class Writer(Gtk.Box):
         self._renumber_id = 0
         n = 0
         self.buffer.begin_irreversible_action()
-        for line in range(self.buffer.get_line_count()):
+        for line in range(self._lines()):
             kind = self.line_kind(line)
             if kind == "number":
                 n += 1
@@ -174,8 +181,11 @@ class Writer(Gtk.Box):
             start = self.buffer.get_iter_at_line(line)[1]
             end = self._marker_end(line)
             if self.buffer.get_text(start, end, True) != want:
+                align = self.line_align(line)
                 self._remove_marker(line)
                 self._insert_marker(line, want)
+                if align != "start":
+                    self._apply_line(line, align=align)
         self.buffer.end_irreversible_action()
         return False
 
@@ -207,15 +217,22 @@ class Writer(Gtk.Box):
                 self._insert_marker(i, "• ")
             if b.get("align", "start") != "start":
                 self._apply_line(i, align=b["align"])
+        last = len(blocks) - 1
+        end = self.buffer.get_end_iter()
+        self.buffer.insert_with_tags_by_name(end, "\n", "sentinel", "k:" + blocks[last].get("kind", "p"))
         self._renumber()
         self.buffer.place_cursor(self.buffer.get_start_iter())
         self.buffer.end_irreversible_action()
         self._loading = False
 
+    def _lines(self) -> int:
+        """Paragraph count, without the empty line after the hidden sentinel."""
+        return max(1, self.buffer.get_line_count() - 1)
+
     def model(self) -> dict:
         blocks = []
         marker = self.tags.lookup("marker")
-        for line in range(self.buffer.get_line_count()):
+        for line in range(self._lines()):
             start, end = self._line_bounds(line)
             runs = []
             it = start.copy()
@@ -237,10 +254,16 @@ class Writer(Gtk.Box):
 
     def words(self) -> int:
         start, end = self.buffer.get_bounds()
-        text = self.buffer.get_text(start, end, False).replace("•", " ")
+        text = self.buffer.get_text(start, end, False)
+        text = " ".join(t for t in text.split() if not (t == "•" or (t.endswith(".") and t[:-1].isdigit())))
         return len([w for w in text.split() if any(ch.isalnum() for ch in w)])
 
     # ------------------------------------------------------------ editing
+    def _inserting(self, buf, where, text, length):
+        # The paragraph's style, read before the new text takes the line's first character.
+        line = where.get_line()
+        self._pre = (self.line_kind(line), self.line_align(line))
+
     def _inserted(self, buf, end_iter, text, length):
         if self._loading:
             return
@@ -256,9 +279,10 @@ class Writer(Gtk.Box):
         for k, on in have.items():
             (buf.apply_tag_by_name if on else buf.remove_tag_by_name)(k, start, end_iter)
         buf.remove_tag_by_name("marker", start, end_iter)
+        buf.remove_tag_by_name("sentinel", start, end_iter)
         # The paragraph's kind and alignment cover every line the insert touched.
         first, last = start.get_line(), end_iter.get_line()
-        kind, align = self.line_kind(first), self.line_align(first)
+        kind, align = getattr(self, "_pre", None) or (self.line_kind(first), self.line_align(first))
         if "\n" in text and kind in LIST_KINDS:
             pass
         for line in range(first, last + 1):
@@ -277,6 +301,11 @@ class Writer(Gtk.Box):
 
     def _mark_set(self, _buf, _iter, mark):
         if mark.get_name() == "insert":
+            it = self.buffer.get_iter_at_mark(mark)
+            if it.is_end() and self.buffer.get_char_count() > 0:  # never past the hidden sentinel
+                it.backward_char()
+                self.buffer.place_cursor(it)
+                return
             self.pending = {}
             line = self.buffer.get_iter_at_mark(mark).get_line()
             self.style_menu_label(STYLE_NAMES[self.line_kind(line)])

@@ -23,7 +23,8 @@ from gi.repository import Adw, Gio, GLib, Gtk  # noqa: E402
 from luma_appkit import (  # noqa: E402
     ActionCenter, AppWindow, BarAction, BarEntry, BarMenu, Command, CommandGroup, CommandRegistry,
     DestructiveDialog, DocumentHeader, EmptyState, FileRequest, Island, NavigationSidebar, RowLead,
-    SidebarFoot, SidebarRow, SidebarToggle, StackedButton, StackedButtons, Toast, ToastHost, ask_for_file,
+    SidebarFoot, SidebarRow, SidebarToggle, StackedButton, StackedButtons, TitleIsland, Toast, ToastHost,
+    ask_for_file,
 )
 from luma_appkit.action_bubble import MenuItem  # noqa: E402
 
@@ -128,9 +129,17 @@ class Window(AppWindow):
         main = Gtk.Box(hexpand=True)
         main.append(self.host)
         body.append(main)
-        self.sidebar_toggle = SidebarToggle(self.sidebar)  # after the sidebar is in the layout, as Tasks does
+        # On a phone: ☰ and the open file's name are one island at the top left; tapping ☰ grows it
+        # into the sidebar (Ari's shape). On a computer the toggle sits in the title row (F9).
+        self.title_island = TitleIsland(APP_NAME, "", lead="menu")
+        self.island_key = self.title_island.add_trailing(TitleIsland.button("share", "Export as PDF", self._island_key))
+        self.title_island.add_trailing(TitleIsland.button("ellipsis", "More", self._island_more))
+        self.sidebar_toggle = SidebarToggle(self.sidebar, island=self.title_island)  # after the sidebar is laid out
         self.set_leading(self.sidebar_toggle)
         self.set_body(body)
+        self.title_island.float_over(body)
+        self.tier_watch.connect("tier-changed", lambda *_: self._tiered())
+        self._tiered()
         self.center = ActionCenter().attach(self.host)
 
         self.header = DocumentHeader(APP_NAME, icon=APP_ID, subtitle="", more=commands)
@@ -144,6 +153,22 @@ class Window(AppWindow):
             self.open_entry(recent[0])
         else:
             self.show_bar()
+
+    def _tiered(self):
+        # Content starts under the floating title island on a phone.
+        self.stack.set_margin_top(64 if self.tier == "phone" else 0)
+
+    def _island_key(self):
+        if self.kind == "presentation":
+            self.present_slides()
+        elif self.entry is not None:
+            self.export_pdf()
+        else:
+            self.open_file()
+
+    def _island_more(self):
+        from luma_appkit import MenuDrawer
+        MenuDrawer.present(self, self.commands_registry)
 
     # ------------------------------------------------------------ styling (our content only)
     def _css(self):
@@ -287,6 +312,11 @@ class Window(AppWindow):
         self.header = DocumentHeader(e.title, icon=APP_ID, subtitle=KIND_NAMES[e.kind], share=self._share,
                                      primary=primary, on_primary=on_primary, more=self.commands_registry)
         self.set_title_content(self.header)
+        icon, label = ("play", "Present") if e.kind == "presentation" else ("share", "Export as PDF")
+        from luma_appkit import icons
+        self.island_key.set_child(icons.image(icon))
+        self.island_key.set_tooltip_text(label)
+        self.island_key.update_property([Gtk.AccessibleProperty.LABEL], [label])
 
     def _update_subtitle(self):
         if not self.entry:
@@ -300,6 +330,7 @@ class Window(AppWindow):
         else:
             parts.append("Saved" if self._saved else "Edited")
         self.header.set_title(self.entry.title, " · ".join(parts))
+        self.title_island.set_title(self.entry.title, " · ".join(parts))
 
     def close_file(self):
         self.flush()
@@ -308,6 +339,7 @@ class Window(AppWindow):
         self.editor = self.entry = self.kind = None
         self.stack.set_visible_child_name("empty")
         self.header.set_visible(False)
+        self.title_island.set_title(APP_NAME, "")
         self.show_bar()
         self._select_rows()
 
