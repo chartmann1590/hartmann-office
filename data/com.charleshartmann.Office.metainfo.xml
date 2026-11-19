@@ -94,10 +94,15 @@
     <value key="org.projectluma.ApplicationContract">0.2</value>
   </custom>
   <releases>
-    <release version="1.1.2" date="2026-11-19"><description><p>Scoped lifetime promo entry and clear purchase labels.</p></description></release>
+    <release version="1.2.1" date="2026-11-19"><description><p>Keep GitHub update checks alongside scoped lifetime promotions and exact plan labels.</p></description></release>
+    <release version="1.2.0" date="2026-11-19">
+      <description>
+        <p>Update alerts: when a new version is out, see what's new and get it from inside the app. Copies from Depot update through Depot; copies downloaded from GitHub download the new version, check it, and open it in the system installer.</p>
+      </description>
+    </release>
     <release version="1.1.1" date="2026-11-19">
       <description>
-        <p>Office Pro Lifetime accepts promotion codes: enter yours on Stripe's checkout page.</p>
+        <p>When the store offers promotion codes for Office Pro Lifetime, the upgrade panel says so; codes are entered on Stripe's checkout page.</p>
       </description>
     </release>
     <release version="1.1.0" date="2026-11-19">

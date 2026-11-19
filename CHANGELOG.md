@@ -1,9 +1,20 @@
 # Changelog
 
-## 1.1.2 — 2026-11-19
+## 1.2.1 (2026-11-19)
 
-- Add optional, product-scoped promotion codes to Lifetime checkout when enabled by the billing catalog.
-- Show the exact purchased or active plan; normal checkout and purchase restore remain available.
+- Combine the GitHub release checker with scoped lifetime promotion entry and exact purchased-plan labels.
+
+## 1.2.0 (2026-11-19)
+
+- Update alerts: Hartmann Office watches its GitHub releases and tells you when a new version is out, with the release
+  notes. Copies from Depot update through Depot (Luma's own updater); copies downloaded from GitHub download
+  the bundle for this device, check it against the release's checksums, and open it in the system installer,
+  which asks you to confirm. Turn automatic checks off in the update panel.
+
+## 1.1.1 (2026-11-19)
+
+- Ready for promotion codes on Office Pro Lifetime: when the store turns them on, the upgrade panel says so and
+  codes are entered on Stripe's checkout page. Codes are checked by Stripe; a completed order unlocks exactly like a paid one.
 
 ## 1.1.0 (2026-11-19)
 

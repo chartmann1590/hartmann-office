@@ -77,8 +77,16 @@ source: the Pro code is GPL too.
 - OpenDocument files (`.odt`, `.ods`, `.odp`) that LibreOffice, Microsoft Office and others open, plus CSV and Markdown.
 - Export any file to PDF, or print it.
 - Files live in the app's own folder and move in and out through the system file picker. The app has no
-  filesystem access, and uses the network only for the optional Office Pro purchase
+  filesystem access, and uses the network only for the optional Office Pro purchase and update checks
   ([privacy policy](PRIVACY.md)).
+
+### Updates
+
+The app watches its [GitHub releases](https://github.com/chartmann1590/hartmann-office/releases) and tells you when a new version is out, with the release notes.
+Copies installed from **Depot** update through Depot (Luma's own updater; Update in the panel or App updates in the
+app menu). Copies installed from a **GitHub download** fetch the bundle for this device, check it against the
+release's `SHA256SUMS`, and open it in the system installer, which asks you to confirm; the app never installs
+anything itself. Automatic checks (at most twice a day) can be turned off.
 
 ## Keyboard
 
