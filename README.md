@@ -58,13 +58,27 @@ Built with LumaUI, it fits a computer, a tablet, a phone and a TV (it's on Luma'
 </table>
 
 
+### Office Pro
+
+Everything above is free. **Office Pro** is an optional purchase that supports development and adds:
+
+- **Templates**: résumé, cover letter, meeting notes, invoice, monthly budget, project plan, pitch deck and lesson.
+- **Premium slide themes**: Midnight, Sunrise, Forest and Slate.
+- **Version history**: go back to an earlier version of any file, and undo that too.
+- **Headers, footers and page numbers** on every page of a printed or exported document.
+
+It's a monthly or yearly subscription (the yearly one starts with a free week) or a one-time unlock, paid through
+Stripe in your browser, with prices shown in the app. Cancel any time from the same panel. Hartmann Office is open
+source: the Pro code is GPL too.
+
 ### Files
 
 - Saves as you go. Deleted files wait 30 days in **Deleted** before they're gone.
 - OpenDocument files (`.odt`, `.ods`, `.odp`) that LibreOffice, Microsoft Office and others open, plus CSV and Markdown.
 - Export any file to PDF, or print it.
 - Files live in the app's own folder and move in and out through the system file picker. The app has no
-  network or filesystem access ([privacy policy](PRIVACY.md)).
+  filesystem access, and uses the network only for the optional Office Pro purchase
+  ([privacy policy](PRIVACY.md)).
 
 ## Keyboard
 

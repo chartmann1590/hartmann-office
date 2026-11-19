@@ -49,6 +49,7 @@ class Library:
         self.root = root or os.path.join(GLib.get_user_data_dir(), "hartmann-office")
         self.files = os.path.join(self.root, "files")
         self.index_path = os.path.join(self.root, "index.json")
+        self.versions_dir = os.path.join(self.root, "versions")
         os.makedirs(self.files, exist_ok=True)
         self.entries: dict[str, Entry] = {}
         self._load_index()
@@ -106,6 +107,7 @@ class Library:
         return odf.load(self.path(entry), entry.filename)
 
     def write(self, entry: Entry, model: dict):
+        self.snapshot(entry)
         tmp = os.path.join(self.files, "." + entry.filename + ".tmp")
         odf.save(tmp, model, entry.title)
         os.replace(tmp, self.path(entry))
@@ -132,11 +134,68 @@ class Library:
         entry.deleted = 0.0
         self._save_index()
 
+    # ------------------------------------------------------------ version history (Office Pro)
+    VERSION_EVERY_S = 10 * 60
+    KEEP_VERSIONS = 30
+
+    def _versions_of(self, entry: Entry) -> str:
+        return os.path.join(self.versions_dir, entry.id)
+
+    def snapshot(self, entry: Entry, *, force: bool = False) -> str:
+        """Keep a copy of the file as it is now, at most every 10 minutes (always with `force`). Copies are
+        made for everyone, so an earlier version is there to restore the day someone gets Office Pro."""
+        src = self.path(entry)
+        if not os.path.exists(src):
+            return ""
+        folder = self._versions_of(entry)
+        have = self.versions(entry)
+        if have and not force and time.time() - have[0][0] < self.VERSION_EVERY_S:
+            return ""
+        os.makedirs(folder, exist_ok=True)
+        stamp = f"{time.time():.3f}"
+        dst = os.path.join(folder, f"{stamp}{os.path.splitext(src)[1]}")
+        shutil.copy2(src, dst)
+        os.utime(dst, (float(stamp), float(stamp)))
+        for _t, old in self.versions(entry)[self.KEEP_VERSIONS:]:
+            try:
+                os.remove(old)
+            except OSError:
+                pass
+        return dst
+
+    def versions(self, entry: Entry) -> list[tuple[float, str]]:
+        """Earlier versions of a file, newest first: [(when, path)]."""
+        folder = self._versions_of(entry)
+        try:
+            names = os.listdir(folder)
+        except FileNotFoundError:
+            return []
+        out = []
+        for n in names:
+            try:
+                out.append((float(os.path.splitext(n)[0]), os.path.join(folder, n)))
+            except ValueError:
+                continue
+        return sorted(out, reverse=True)
+
+    def restore_version(self, entry: Entry, path: str) -> dict:
+        """Make an earlier version current. The current one is kept as a version first, so this can be undone."""
+        model = odf.load(path, entry.filename)
+        self.snapshot(entry, force=True)
+        tmp = os.path.join(self.files, "." + entry.filename + ".tmp")
+        odf.save(tmp, model, entry.title)
+        os.replace(tmp, self.path(entry))
+        entry.modified = time.time()
+        entry.preview = " ".join(odf.model_text(model).split())[:160]
+        self._save_index()
+        return model
+
     def remove(self, entry: Entry):
         try:
             os.remove(self.path(entry))
         except FileNotFoundError:
             pass
+        shutil.rmtree(self._versions_of(entry), ignore_errors=True)
         self.entries.pop(entry.id, None)
         self._save_index()
 

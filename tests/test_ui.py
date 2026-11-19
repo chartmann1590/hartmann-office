@@ -9,6 +9,7 @@ import traceback
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 os.environ.setdefault("XDG_DATA_HOME", tempfile.mkdtemp())
+os.environ["HS_BILLING_URL"] = "http://127.0.0.1:1"   # no store in tests
 
 import gi  # noqa: E402
 
@@ -207,8 +208,85 @@ def t_window():
     assert done.get("ok")
 
 
+def t_pro():
+    """Office Pro: locked extras open the upgrade panel; owned, they work."""
+    from hoffice import app as A
+    application = Adw.Application(application_id="com.charleshartmann.OfficeProTest")
+    done = {}
+
+    def act(a):
+        try:
+            run_pro(a)
+        finally:
+            a.quit()
+
+    def run_pro(a):
+        w = A.Window(a)
+        assert not w.pro
+        n = len(w.library.list())
+        w._from_template("invoice")
+        pump(20)
+        assert len(w.library.list()) == n and w.center.grown == "pro"   # locked: nothing made, panel open
+        w.center.fold()
+        # owned, as the license server answers after a paid checkout
+        w.billing._store({"email": "t@example.com", "entitlements": ["office_lifetime"], "licenseToken": ""})
+        assert w.pro
+        w._from_template("invoice")
+        pump(30)
+        assert w.kind == "spreadsheet" and w.entry.title == "Invoice"
+        assert w.grid.value(13, 4) == 2575                               # the template's formulas work
+        w._from_template("pitch")
+        pump(30)
+        assert w.kind == "presentation" and w.editor.model["theme"] == "midnight"
+        rows = w.editor.theme_rows()
+        assert any(r.label == "Forest" for r in rows)
+        # page set-up survives the editor and a save
+        w._from_template("meeting-notes")
+        pump(30)
+        w.editor.page_setup = {"header": "Team sync", "page_numbers": True}
+        w._edited()
+        w.flush()
+        m = w.library.read(w.entry)
+        assert m["header"] == "Team sync" and m["page_numbers"] is True
+        w.ask_page_setup()
+        pump(10)
+        assert w.center.grown == "page-setup"
+        w.center.fold()
+        # version history: restore the blank-ish original, then undo by restoring the newest
+        e = w.entry
+        w.library.snapshot(e, force=True)
+        vs = w.library.versions(e)
+        assert vs
+        w.ask_versions()
+        pump(10)
+        assert w.center.grown == "versions"
+        w.center.fold()
+        w._restore_version(vs[-1][1], vs[-1][0])
+        pump(10)
+        assert w.entry is e
+        # Pro locked again: premium themes are marked and don't apply
+        w.billing.forget()
+        pump(10)
+        w._from_template("lesson")
+        pump(10)
+        assert w.center.grown == "pro"
+        w.center.fold()
+        w.new_file("presentation")
+        pump(20)
+        rows = w.editor.theme_rows()
+        locked = [r for r in rows if r.note == "Pro"]
+        assert len(locked) == 4
+        locked[0].on_activate()
+        pump(10)
+        assert w.editor.model["theme"] == "paper" and w.center.grown == "pro"
+        done["ok"] = True
+    application.connect("activate", act)
+    application.run([])
+    assert done.get("ok")
+
+
 for name, fn in (("documents", t_writer), ("spreadsheets", t_sheet), ("presentations", t_slides),
-                 ("library and PDF", t_library_and_pdf), ("window", t_window)):
+                 ("library and PDF", t_library_and_pdf), ("window", t_window), ("Office Pro", t_pro)):
     check(name, fn)
 
 bad = 0

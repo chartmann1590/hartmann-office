@@ -37,6 +37,8 @@ class Writer(Gtk.Box):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, hexpand=True, vexpand=True)
         self.add_css_class("hoffice-writer")
         self.page_size = model.get("page", "letter")
+        # page set-up the editor doesn't show but must keep (Office Pro header, footer, page numbers)
+        self.page_setup = {k: model[k] for k in ("header", "footer", "page_numbers") if k in model}
         self.pending: dict[str, bool] = {}
         self._loading = False
         self._renumber_id = 0
@@ -199,6 +201,8 @@ class Writer(Gtk.Box):
         self.buffer.begin_irreversible_action()
         self.buffer.set_text("")
         self.page_size = model.get("page", "letter")
+        # page set-up the editor doesn't show but must keep (Office Pro header, footer, page numbers)
+        self.page_setup = {k: model[k] for k in ("header", "footer", "page_numbers") if k in model}
         blocks = model.get("blocks") or odf.new_model("document")["blocks"]
         for i, b in enumerate(blocks):
             if i:
@@ -250,7 +254,8 @@ class Writer(Gtk.Box):
                             runs.append({"text": text, **marks})
                 it = nxt
             blocks.append({"kind": self.line_kind(line), "align": self.line_align(line), "runs": runs or [{"text": ""}]})
-        return {"kind": "document", "version": odf.MODEL_VERSION, "page": self.page_size, "blocks": blocks}
+        return {"kind": "document", "version": odf.MODEL_VERSION, "page": self.page_size, "blocks": blocks,
+                **getattr(self, "page_setup", {})}
 
     def words(self) -> int:
         start, end = self.buffer.get_bounds()

@@ -17,6 +17,11 @@
       <li>Everything saves as you go, and deleted files wait 30 days in Deleted before they are gone</li>
     </ul>
     <p>
+      Hartmann Office is free, with no ads. Office Pro is an optional purchase (a monthly or yearly subscription, or
+      a one-time unlock, paid through Stripe) that adds templates, premium slide themes, version history, and
+      headers, footers and page numbers. Everything above stays free.
+    </p>
+    <p>
       Hartmann Office works offline, has no account and collects nothing. Your files stay on your device
       unless you choose to save a copy somewhere else.
     </p>
@@ -89,6 +94,11 @@
     <value key="org.projectluma.ApplicationContract">0.2</value>
   </custom>
   <releases>
+    <release version="1.1.0" date="2026-11-19">
+      <description>
+        <p>Office Pro, an optional purchase: templates, premium slide themes, version history, and headers, footers and page numbers. Everything that was free stays free.</p>
+      </description>
+    </release>
     <release version="1.0.0" date="2026-11-18">
       <description>
         <p>The first release: documents, spreadsheets and presentations, OpenDocument files, PDF export and printing.</p>

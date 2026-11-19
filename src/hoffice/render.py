@@ -60,6 +60,10 @@ class DocumentLayout:
         self.size = page or PAGE_SIZES.get(model.get("page", "letter"), PAGE_SIZES["letter"])
         self.margin = 72.0
         self._pages = None
+        # Office Pro: a running header, a footer and page numbers ("Page 2 of 5"), in the top and bottom margins
+        self.header = (model.get("header") or "").strip()
+        self.footer = (model.get("footer") or "").strip()
+        self.page_numbers = bool(model.get("page_numbers"))
 
     def _layouts(self, cr):
         w = self.size[0] - 2 * self.margin
@@ -132,6 +136,32 @@ class DocumentLayout:
         for line, x, y in self._pages[index]:
             cr.move_to(x, y)
             PangoCairo.show_layout_line(cr, line)
+        self._draw_margins(cr, index)
+
+    def _draw_margins(self, cr, index: int):
+        if not (self.header or self.footer or self.page_numbers):
+            return
+        w, h, m = self.size[0], self.size[1], self.margin
+
+        def line(text, y, align):
+            lay = PangoCairo.create_layout(cr)
+            fd = Pango.FontDescription.from_string(FONT)
+            fd.set_size(int(9 * Pango.SCALE))
+            lay.set_font_description(fd)
+            lay.set_width(int((w - 2 * m) * Pango.SCALE))
+            lay.set_alignment(align)
+            lay.set_ellipsize(Pango.EllipsizeMode.END)
+            lay.set_text(text, -1)
+            cr.set_source_rgb(0.42, 0.42, 0.45)
+            cr.move_to(m, y)
+            PangoCairo.show_layout(cr, lay)
+        if self.header:
+            line(self.header, m * 0.45, Pango.Alignment.CENTER)
+        total = len(self._pages or [1])
+        if self.footer:
+            line(self.footer, h - m * 0.6, Pango.Alignment.LEFT if self.page_numbers else Pango.Alignment.CENTER)
+        if self.page_numbers:
+            line(f"Page {index + 1} of {total}", h - m * 0.6, Pango.Alignment.RIGHT)
 
 
 class SheetLayout:
@@ -216,7 +246,13 @@ THEMES = {
     "harbor": ((0.07, 0.227, 0.353), (0.949, 0.969, 0.984), (0.45, 0.82, 0.86), "Harbor"),
     "meadow": ((0.906, 0.945, 0.894), (0.114, 0.20, 0.125), (0.24, 0.55, 0.30), "Meadow"),
     "ember": ((0.227, 0.086, 0.063), (1.0, 0.945, 0.91), (1.0, 0.62, 0.35), "Ember"),
+    # Office Pro themes
+    "midnight": ((0.051, 0.059, 0.141), (0.925, 0.929, 1.0), (0.63, 0.55, 1.0), "Midnight"),
+    "sunrise": ((1.0, 0.953, 0.918), (0.235, 0.11, 0.075), (0.91, 0.36, 0.30), "Sunrise"),
+    "forest": ((0.094, 0.176, 0.141), (0.918, 0.961, 0.929), (0.71, 0.86, 0.45), "Forest"),
+    "slate": ((0.925, 0.933, 0.945), (0.13, 0.16, 0.2), (0.16, 0.45, 0.85), "Slate"),
 }
+PRO_THEMES = frozenset({"midnight", "sunrise", "forest", "slate"})
 
 
 def _text(cr, text, x, y, w, h, size, weight=400, align=Pango.Alignment.LEFT, colour=(0, 0, 0), valign="top",

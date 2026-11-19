@@ -59,7 +59,7 @@ def q(tag: str) -> str:
 # ---------------------------------------------------------------- models
 BLOCK_KINDS = ("p", "title", "h1", "h2", "h3", "bullet", "number", "quote")
 ALIGNS = ("start", "center", "end", "justify")
-THEMES = ("paper", "ink", "harbor", "meadow", "ember")
+THEMES = ("paper", "ink", "harbor", "meadow", "ember", "midnight", "sunrise", "forest", "slate")
 LAYOUTS = ("title", "content", "section", "blank")
 
 

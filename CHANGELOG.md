@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.0 (2026-11-19)
+
+- Office Pro, an optional purchase through Stripe: templates, premium slide themes, version history, and
+  headers, footers and page numbers. Nothing that was free before costs money now.
+- Computer, tablet, phone and TV screenshots; on Luma's TV home.
+
 ## 1.0.0 (2026-11-18)
 
 The first release.

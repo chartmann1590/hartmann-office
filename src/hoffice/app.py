@@ -28,16 +28,26 @@ from luma_appkit import (  # noqa: E402
 )
 from luma_appkit.action_bubble import MenuItem  # noqa: E402
 
-from . import odf, render  # noqa: E402
+from . import odf, render, templates  # noqa: E402
+from .hsbilling import Billing  # noqa: E402
+from .paywall import Paywall  # noqa: E402
 from .library import KIND_ICONS, KIND_NAMES, Library  # noqa: E402
 
 APP_ID = "com.charleshartmann.Office"
 APP_NAME = "Hartmann Office"
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 PLACES = (("all", "All files", "folder"), ("document", "Documents", "file-text"),
           ("spreadsheet", "Spreadsheets", "table"), ("presentation", "Presentations", "monitor"),
           ("deleted", "Deleted", "trash-2"))
 SAVE_DELAY_MS = 700
+PRO = "Office Pro"
+PRO_PRODUCTS = ("office_lifetime", "office_pro:yearly", "office_pro:monthly")  # best first
+PRO_FEATURES = (
+    ("layout-template", "Templates", "Résumé, cover letter, meeting notes, invoice, budget, project plan, pitch deck and lesson."),
+    ("palette", "Premium slide themes", "Midnight, Sunrise, Forest and Slate."),
+    ("history", "Version history", "Go back to an earlier version of any file, and undo that too."),
+    ("file-text", "Headers, footers and page numbers", "On every page of a printed or exported document."),
+)
 
 
 def when(t: float) -> str:
@@ -57,6 +67,7 @@ def when(t: float) -> str:
 class Window(AppWindow):
     def __init__(self, app):
         self.library = Library()
+        self.billing = Billing("hartmann-office", PRO_PRODUCTS, os.path.join(self.library.root, "license.json"))
         self.place = "all"
         self.query = ""
         self.entry = None        # the open library Entry
@@ -94,6 +105,14 @@ class Window(AppWindow):
                         enabled=lambda: self.entry is not None and not self.entry.deleted),
                 Command("file.delete", "Move to Deleted", self.ask_delete, icon="trash-2", destructive=True,
                         enabled=lambda: self.entry is not None and not self.entry.deleted),
+            )),
+            CommandGroup(PRO, (
+                Command("pro.open", f"{PRO}…", lambda: self.open_pro(), icon="sparkles"),
+                Command("pro.template", "New from a template…", lambda: self.ask_template(), icon="layout-template"),
+                Command("pro.versions", "Version history…", lambda: self.ask_versions(), icon="history",
+                        enabled=lambda: self.entry is not None and not self.entry.deleted),
+                Command("pro.page", "Header, footer and page numbers…", lambda: self.ask_page_setup(),
+                        icon="file-text", enabled=lambda: self.kind == "document"),
             )),
             CommandGroup("Edit", (
                 Command("edit.undo", "Undo", self.undo, icon="undo-2", shortcut=("Ctrl", "Z"),
@@ -149,6 +168,11 @@ class Window(AppWindow):
         self.set_title_content(self.header)
 
         self.connect("close-request", self._closing)
+        self.paywall = Paywall(self, self.billing, PRO, PRO_FEATURES, open_uri=self.open_uri,
+                               toast=lambda t, k="done": Toast.show(self.host, t, kind=k), changed=self._pro_changed)
+        if self.billing.needs_revalidation():
+            import threading
+            threading.Thread(target=self.billing.revalidate, daemon=True).start()
         self.refresh()
         recent = self.library.list()
         if recent:
@@ -241,7 +265,8 @@ class Window(AppWindow):
         trio = StackedButtons([StackedButton("file-text", "Document", on_click=lambda: self._new_from_panel("document")),
                                StackedButton("table", "Spreadsheet", on_click=lambda: self._new_from_panel("spreadsheet")),
                                StackedButton("monitor", "Presentation",
-                                             on_click=lambda: self._new_from_panel("presentation"))])
+                                             on_click=lambda: self._new_from_panel("presentation")),
+                               StackedButton("layout-template", "Template", on_click=self.ask_template)])
         self.center.grow("new", trio)
 
     def _new_from_panel(self, kind):
@@ -297,6 +322,8 @@ class Window(AppWindow):
             ed = SlideEditor(model)
             ed.connect("changed", self._edited)
             ed.connect("moved", lambda *_: self.show_bar())
+            ed.pro = lambda: self.pro
+            ed.locked = self.need_pro
         return ed
 
     def _focus_editor(self):
@@ -344,6 +371,116 @@ class Window(AppWindow):
         self.title_island.set_title(APP_NAME, "")
         self.show_bar()
         self._select_rows()
+
+    # ------------------------------------------------------------ Office Pro
+    @property
+    def pro(self) -> bool:
+        return self.billing.owns()
+
+    def open_uri(self, url: str):
+        Gtk.UriLauncher.new(url).launch(self, None, None, None)
+
+    def open_pro(self):
+        self.center.grow("pro", self.paywall.panel, wide=True)
+
+    def need_pro(self, what: str) -> bool:
+        if self.pro:
+            return True
+        Toast.show(self.host, f"{what} come with {PRO}" if what.endswith("s") else f"{what} comes with {PRO}",
+                   kind="done")
+        self.open_pro()
+        return False
+
+    def _pro_changed(self):
+        # the upgrade panel stays open to say thank you; the bar catches up when it folds
+        if self.center.grown != "pro":
+            self.show_bar()
+
+    def ask_template(self):
+        from luma_appkit import PanelHeading, PanelRow
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        box.append(PanelHeading("Start from a template" + ("" if self.pro else f" · {PRO}")))
+        for key, title, icon, model in templates.TEMPLATES:
+            kind = KIND_NAMES[model["kind"]]
+            box.append(PanelRow(title, icon=icon, subtitle=kind, on_activate=lambda k=key: self._from_template(k)))
+        self.center.grow("template", box)
+
+    def _from_template(self, key: str):
+        if not self.need_pro("Templates"):
+            return
+        self.flush()
+        title, model = templates.model(key)
+        e = self.library.create(model["kind"], title, model)
+        self.place, self.query = "all", ""
+        self.open_entry(e)
+        self.refresh()
+        Toast.show(self.host, f"New {title.lower()} from the template", kind="added")
+
+    def ask_versions(self):
+        if self.entry is None or self.entry.deleted:
+            return
+        from luma_appkit import PanelHeading, PanelRow
+        self.flush()
+        vs = self.library.versions(self.entry)
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        box.append(PanelHeading("Version history" + ("" if self.pro else f" · {PRO}")))
+        if not vs:
+            box.append(PanelRow("No earlier versions yet", icon="history", sensitive=False,
+                                subtitle="A version is kept every 10 minutes while you work."))
+        for t, path in vs[:20]:
+            try:
+                size = f"{os.path.getsize(path) // 1024 + 1} KB"
+            except OSError:
+                size = ""
+            box.append(PanelRow(when(t), icon="history", subtitle=time.strftime("%B %-d, %Y at %-I:%M %p", time.localtime(t)),
+                                detail=size, on_activate=lambda p=path, t=t: self._restore_version(p, t)))
+        self.center.grow("versions", box)
+
+    def _restore_version(self, path: str, t: float):
+        if not self.need_pro("Version history"):
+            return
+        e = self.entry
+        try:
+            self.library.restore_version(e, path)
+        except Exception as ex:
+            Toast.show(self.host, f"Couldn't restore that version: {ex}", kind="error")
+            return
+        self.open_entry(e)
+        self.refresh()
+
+        def undo():
+            newest = self.library.versions(e)
+            if newest:
+                self.library.restore_version(e, newest[0][1])
+                self.open_entry(e)
+        Toast.show(self.host, f"Restored the version from {when(t).lower()}", kind="done", undo=undo)
+
+    def ask_page_setup(self):
+        if self.kind != "document" or self.editor is None:
+            return
+        if not self.need_pro("Headers, footers and page numbers"):
+            return
+        from luma_appkit import PanelHeading, PanelRow, TextButton, TextField
+        w = self.editor
+        setup = dict(getattr(w, "page_setup", {}))
+        header = TextField("Header", value=setup.get("header", ""), placeholder="At the top of every page", size="panel")
+        footer = TextField("Footer", value=setup.get("footer", ""), placeholder="At the bottom of every page", size="panel")
+        numbers = {"on": bool(setup.get("page_numbers"))}
+
+        def done():
+            new = {"header": header.text.strip(), "footer": footer.text.strip(), "page_numbers": numbers["on"]}
+            w.page_setup = {k: v for k, v in new.items() if v}
+            self.center.fold()
+            self._edited()
+            Toast.show(self.host, "Page set-up saved. You'll see it when you export or print.", kind="saved")
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        box.append(PanelHeading("Header, footer and page numbers"))
+        box.append(header)
+        box.append(footer)
+        box.append(PanelRow("Page numbers", icon="list-ordered", toggle=numbers["on"],
+                            on_toggle=lambda on: numbers.update(on=on)))
+        box.append(TextButton("Done", icon="check", style="fill", on_click=done))
+        self.center.grow("page-setup", box)
 
     # ------------------------------------------------------------ saving
     def _edited(self, *_):
@@ -609,7 +746,9 @@ class Window(AppWindow):
     def show_bar(self):
         new_menu = [MenuItem("Document", icon="file-text", on_activate=lambda: self.new_file("document")),
                     MenuItem("Spreadsheet", icon="table", on_activate=lambda: self.new_file("spreadsheet")),
-                    MenuItem("Presentation", icon="monitor", on_activate=lambda: self.new_file("presentation"))]
+                    MenuItem("Presentation", icon="monitor", on_activate=lambda: self.new_file("presentation")),
+                    MenuItem("From a template…", icon="layout-template", note=None if self.pro else "Pro",
+                             on_activate=self.ask_template)]
         if self.entry is None:
             self.center.show_bar([BarAction("folder-open", "Open…", on_activate=self.open_file),
                                   BarAction("square-pen", "New", menu=new_menu, primary=True)])
@@ -644,6 +783,9 @@ class Window(AppWindow):
             BarAction("search", "Find and replace…", on_activate=self.find),
             BarAction("file-text", "Page size: " + ("Letter" if w.page_size == "letter" else "A4"),
                       on_activate=self._toggle_page),
+            BarAction("file-text", "Header, footer and page numbers…", on_activate=self.ask_page_setup),
+            BarAction("history", "Version history…", on_activate=self.ask_versions),
+            BarAction("sparkles", f"{PRO}…", on_activate=self.open_pro),
         ])
 
     def _toggle_page(self):
@@ -771,6 +913,8 @@ class Window(AppWindow):
             BarAction("minus", "Delete columns", danger=True, on_activate=g.delete_cols),
             BarAction("edit-rename", "Rename sheet…", on_activate=self._ask_rename_sheet),
             BarAction("trash-2", "Delete sheet", danger=True, on_activate=self._ask_delete_sheet),
+            BarAction("history", "Version history…", on_activate=self.ask_versions),
+            BarAction("sparkles", f"{PRO}…", on_activate=self.open_pro),
         ])
 
     def _go_sheet(self, i):
@@ -846,6 +990,8 @@ class Window(AppWindow):
             BarAction("chevron-down", "Move slide later", on_activate=lambda: s.move_slide(1)),
             BarAction("trash-2", "Delete slide", danger=True, on_activate=self._delete_slide),
             BarAction("play", "Present", on_activate=self.present_slides),
+            BarAction("history", "Version history…", on_activate=self.ask_versions),
+            BarAction("sparkles", f"{PRO}…", on_activate=self.open_pro),
         ])
 
     def _delete_slide(self):

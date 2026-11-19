@@ -251,10 +251,20 @@ class SlideEditor(Gtk.Box):
         return [MenuItem(name, icon=icon, selected=(k == cur), on_activate=lambda k=k: self.set_layout(k))
                 for k, (name, icon) in LAYOUT_NAMES.items()]
 
+    #: Office Pro: `pro()` says whether it's owned; `locked(what)` opens the upgrade panel.
+    pro = staticmethod(lambda: True)
+    locked = staticmethod(lambda what: None)
+
     def theme_rows(self):
         cur = self.model.get("theme", "paper")
-        return [MenuItem(t[3], icon="palette", selected=(k == cur), on_activate=lambda k=k: self.set_theme(k))
-                for k, t in render.THEMES.items()]
+        rows = []
+        for k, t in render.THEMES.items():
+            if k in render.PRO_THEMES and not self.pro():
+                rows.append(MenuItem(t[3], icon="sparkles", note="Pro", selected=(k == cur),
+                                     on_activate=lambda: self.locked("Premium themes")))
+            else:
+                rows.append(MenuItem(t[3], icon="palette", selected=(k == cur), on_activate=lambda k=k: self.set_theme(k)))
+        return rows
 
 
 class Presenter(Gtk.Window):

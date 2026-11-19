@@ -21,7 +21,7 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
       - run: pip install pytest
-      - run: python -m pytest -v tests/test_formula.py tests/test_odf.py
+      - run: python -m pytest -v tests/test_formula.py tests/test_odf.py tests/test_templates.py tests/test_billing.py tests/test_pro.py
 
   metadata:
     name: Desktop file and manifest
