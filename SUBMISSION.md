@@ -34,22 +34,53 @@ They are attached, with `SHA256SUMS`, to the GitHub release
 
 ## Steps
 
-1. **Publish the source.** Create the public repository `github.com/chartmann1590/hartmann-office` and push
-   `main` (the metainfo's links and screenshot URLs point there).
-2. **Pin the commit.** In `flatpak/com.charleshartmann.Office.json`, replace `COMMIT_PLACEHOLDER` with the full
-   40-character commit you want Luma to build (`git rev-parse HEAD`), commit that, and push. Luma rejects a git
-   source without a full commit.
-3. **Join the developer program** at https://hub.simplyluma.com/connect/developer.
-4. **Prove the namespace.** The app ID is `com.charleshartmann.Office`, so you prove you control
-   `charleshartmann.com` (Connect shows how). If you'd rather prove a GitHub account instead, the ID would
-   become `io.github.chartmann1590.HartmannOffice` in every file; choose before the first submission,
-   because an app ID is permanent.
-5. **Submit the release** in Connect with the name `Hartmann Office` and the ID `com.charleshartmann.Office`.
-   The listing (summary, description, screenshots, categories, licence, links, release notes, OARS rating) is
-   read from `data/com.charleshartmann.Office.metainfo.xml`. For the privacy policy, give the link to
-   `PRIVACY.md` in the repository.
-6. **Review.** Luma builds the manifest, validates the metainfo and desktop file, runs
-   `flatpak-builder-lint`, computes permissions, then a person reviews the first release.
+Done: the public repository, the pinned manifest commit (`493b1045…`), both 1.1.0 packages on the GitHub
+release, and the live Office Pro catalog. A private 1.0.0 draft already exists in Connect (x86_64, with TV
+support and screenshots); keep it and update it rather than starting a new one:
+
+1. **Package:** replace the 1.0.0 x86_64 bundle with `com.charleshartmann.Office-1.1.0-x86_64.flatpak` and add
+   `com.charleshartmann.Office-1.1.0-aarch64.flatpak`, checking each against the SHA-256 above. Version `1.1.0`.
+2. **TV:** keep TV support; the 1.1.0 packages still carry the tile and `X-Luma-TV` keys (`presentation = fullscreen`).
+3. **What's new:** "Office Pro, an optional purchase: templates, premium slide themes, version history, and
+   headers, footers and page numbers. Everything that was free stays free."
+4. **Description:** the 1.1.0 metainfo adds the paragraph saying the app is free with an optional Office Pro
+   purchase through Stripe (review 3.6).
+5. **Permissions:** 1.1.0 adds `--share=network` (Depot shows it as "Uses the internet"), used only for Office Pro.
+6. **Privacy policy:** same link, updated text (`PRIVACY.md`) covering the license server and Stripe.
+7. **In-app purchases / pricing:** say yes if the form asks; prices come from the live catalog. **Sign-in:** `none`.
+8. **Screenshots:** the draft's set can stay; the repo also has computer, tablet, phone and TV shots
+   (`screenshots/`). Store screenshots must not show prices, so the upgrade panel isn't among them.
+9. **Review.** Only Charles sends it for review.
+
+## 1.1.0 release check (2026-11-19)
+
+**Packages** (GitHub release [v1.1.0](https://github.com/chartmann1590/hartmann-office/releases/tag/v1.1.0); built with
+`org.flatpak.Builder` from source commit `493b1045068067fe2a3a09fab1010e243a7bfa8d`, the commit the manifest pins; runtime
+`org.projectluma.Platform//44`):
+
+| Architecture | File | SHA-256 |
+| --- | --- | --- |
+| x86_64 (computers, TVs) | `com.charleshartmann.Office-1.1.0-x86_64.flatpak` | `b7b6d12bf5c31364fac137ee2719b4dbdc4fa4de3c7cfec189a3fb2eed9daf51` |
+| aarch64 (phones, tablets, ARM computers) | `com.charleshartmann.Office-1.1.0-aarch64.flatpak` | `5a252f58f5329ec8277b62942a7d887965be3a146f1a5d2fdb0597c3f42d8111` |
+
+One package per architecture serves computer, tablet, phone and TV (LumaUI adapts by width, input and posture).
+Permissions: network (Office Pro only), display. The same paid-feature, network and privacy disclosure applies on every device: free app,
+optional Office Pro through Stripe, email to the license server and Stripe only when buying or restoring.
+
+**What was verified, and where.** None of this ran on a real Luma phone, tablet or TV.
+
+| Check | Where it ran | Result |
+| --- | --- | --- |
+| UI tests (6), driving the real app | Luma SDK runtime, x86_64 (Proxmox build container) and aarch64 (Docker on Apple Silicon), virtual display | passed |
+| Bundle builds, installs, reports version 1.1.0 | same two environments | passed |
+| Packaged billing code reads the live catalog | both installed packages, both architectures, live server, read-only | exactly the three products: $2.99 a month; $19.99 a year, first 7 days free; $39.99 once |
+| Upgrade panel shows live prices; Buy creates a live Stripe Checkout session (`cs_live_…`); app waits; Cancel returns to the plans; nothing unlocks | x86_64, virtual display, live server; reserved test address, no browser, no card, no payment | passed |
+| Restore for an address that never bought | both packages, live server | "no purchase", nothing unlocked |
+| Purchase, restore and expiry logic against a server speaking the same `/v2` API | unit tests with a local fake server | passed |
+| Computer, tablet, phone and TV layouts | screenshots in the Luma runtime with Luma's device switches (TV posture forced, no Luma shell) | reviewed |
+| Real Luma device (phone, tablet, TV), sound, lock-screen controls, portals | not run | **not verified** |
+| Completed payment, trial enrollment, cancellation in Stripe's portal, restore of a real purchase | not run (no live charges; no test-mode server exists) | **not verified** |
+| `luma release-check` conformance evidence | not run in Luma's SDK test-image lanes | fails as expected; evidence file left honest |
 
 ## Billing (Office Pro)
 
@@ -64,8 +95,9 @@ lengths are read live from the license server, never hard-coded.
 **Sign-in declaration (2.4):** `none`. Buying asks for an email for the receipt and license; it does not create
 an account, and nothing in the app needs one.
 
-**What the license server needs before purchases work:** an app entry `hartmann-office` in its catalog with three Stripe
-prices. Until then the panel says "Purchases aren't open for this app yet" and everything else works.
+**Live since 2026-11-19:** the license server's catalog lists `hartmann-office` with the three approved Stripe prices
+(registered by the studio's billing maintainer; nothing in this repo creates prices). Public readback of
+`/v2/catalog?app=hartmann-office`:
 
 | Product key | Label | Stripe mode | Price |
 | --- | --- | --- | --- |
@@ -73,7 +105,7 @@ prices. Until then the panel says "Purchases aren't open for this app yet" and e
 | `office_pro:yearly` | Office Pro (Yearly) | subscription | $19.99 / year, 7-day free trial |
 | `office_lifetime` | Office Pro (Lifetime) | payment | $39.99 once |
 
-The catalog entry, in the shape the server already serves for Nightsay (`GET /v2/catalog?app=nightsay`):
+The public catalog it serves:
 
 ```json
 {
