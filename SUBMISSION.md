@@ -29,8 +29,8 @@ commit the manifest pins, installed and tested on each architecture:
 - `com.charleshartmann.Office-1.1.0-x86_64.flatpak`: computers
 - `com.charleshartmann.Office-1.1.0-aarch64.flatpak`: phones, tablets and ARM computers
 
-They are in `~/luma-apps/bundles/` with `SHA256SUMS`; they go on the GitHub release v1.1.0 once purchases are
-open on the license server (see Billing). Upload both in Connect.
+They are attached, with `SHA256SUMS`, to the GitHub release
+[v1.1.0](https://github.com/chartmann1590/hartmann-office/releases/tag/v1.1.0) and kept in `~/luma-apps/bundles/`. Upload both in Connect.
 
 ## Steps
 
