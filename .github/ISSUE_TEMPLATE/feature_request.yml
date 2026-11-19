@@ -1,0 +1,16 @@
+name: Idea
+description: Suggest something Hartmann Office could do
+labels: [enhancement]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like to do?
+      description: Describe the task you're trying to get done, not only the feature.
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Which editor?
+      options: [Documents, Spreadsheets, Presentations, Everywhere]
