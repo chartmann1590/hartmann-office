@@ -239,6 +239,7 @@ def _text(cr, text, x, y, w, h, size, weight=400, align=Pango.Alignment.LEFT, co
     cr.set_source_rgb(*colour)
     cr.move_to(x, oy)
     PangoCairo.show_layout(cr, lay)
+    cr.new_path()
     return logical.height
 
 
@@ -279,6 +280,7 @@ def draw_slide(cr, width: float, height: float, slide: dict, theme: str = "paper
             text = line.strip().lstrip("-•* ").strip()
             x = 72 + depth * 32
             cr.set_source_rgb(*accent)
+            cr.new_path()  # the bullet starts its own path, not a line from the last text
             cr.arc(x + 6, y + 17, 5 if depth == 0 else 4, 0, 6.2832)
             cr.fill()
             y += _text(cr, text, x + 26, y, W - x - 96, H - y - 40, 28 if depth == 0 else 24, 400, colour=ink, fit=False) + 14
