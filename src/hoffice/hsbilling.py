@@ -168,17 +168,22 @@ class Billing:
                         "trial_days": int(p.get("trial_days") or 0), "mode": p.get("mode") or "",
                         # The server says so when its Stripe Checkout for this product accepts a promotion code.
                         # Stripe checks the code; the app only tells people where to type it.
-                        "promo_codes": bool(p.get("promotion_codes") or d.get("promotion_codes"))}
+                        "promo_codes": bool(p.get("promotion_codes") or d.get("promotion_codes")),
+                        "scoped_promo_codes": p.get("scoped_promo_codes") is True}
         return out
 
-    def checkout(self, product: str, email: str) -> tuple[str, str]:
+    def checkout(self, product: str, email: str, promotion_code: str = "") -> tuple[str, str]:
         """(checkout page address, session id)."""
         email = email.strip()
         if not EMAIL_RE.match(email):
             raise BillingError("Enter the email you want your receipt and license sent to.", "email")
-        doc = _request("POST", "/v2/checkout", {"app": self.app, "product": product, "email": email})
+        body = {"app": self.app, "product": product, "email": email}
+        if promotion_code:
+            body["promotion_code"] = promotion_code
+        doc = _request("POST", "/v2/checkout", body)
         url = doc.get("checkoutUrl") or ""
-        if not url.startswith("https://"):
+        if not url.startswith("https://") or (promotion_code and
+                urllib.parse.urlsplit(url).netloc != "checkout.stripe.com"):
             raise BillingError("Couldn't open checkout. Try again.", "checkout")
         m = SESSION_RE.search(url)
         with self._lock:

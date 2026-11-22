@@ -59,6 +59,7 @@ class Paywall:
         self.cancel = threading.Event()
         self.box: Gtk.Box | None = None
         self.email_field = None
+        self.promotion_field = None
         self.waiting_for = ""
         billing.listeners.append(lambda: _ui(self._owned_changed))
 
@@ -96,6 +97,16 @@ class Paywall:
     def _owned_part(self):
         b = self.box
         product = self.billing.owned_product()
+        for key in self.billing.products:
+            if not self.billing.owns(key):
+                continue
+            suffix = ("Lifetime" if key.endswith("_lifetime") else
+                      "Monthly" if key.endswith(":monthly") else
+                      "Yearly" if key.endswith(":yearly") else None)
+            if suffix:
+                full = f"{self.name} ({suffix})"
+                note = "Purchased" if suffix == "Lifetime" else "Active plan"
+                b.append(self._words(f"{note}: {full}"))
         word = "Thank you for supporting Hartmann Studios."
         if self.billing.email:
             word += f" Your purchase is tied to {self.billing.email}; use it to restore on another device."
@@ -117,6 +128,12 @@ class Paywall:
             b.append(self._words(self.catalog_error))
             b.append(PanelRow("Try again", icon="refresh-cw", closes=False, on_activate=self._retry_catalog))
         else:
+            self.promotion_field = None
+            b.append(self.email_field)
+            if any(p.get("scoped_promo_codes") for p in self.catalog.values()):
+                self.promotion_field = TextField("Lifetime promotion code (optional)", placeholder="Enter code", size="panel")
+                b.append(self.promotion_field)
+                b.append(self._words("Enter your code, then select Lifetime. You’ll see the total on Stripe before you confirm."))
             b.append(PanelHeading("Choose"))
             promo = []
             for key in self.billing.products[::-1]:  # monthly, yearly, then once (cheapest first)
@@ -127,9 +144,10 @@ class Paywall:
                 if p.get("promo_codes"):
                     words += " · codes accepted"
                     promo.append(p["label"])
+                if p.get("scoped_promo_codes"):
+                    words += " · codes accepted"
                 b.append(PanelRow(p["label"], icon="sparkles", subtitle=words, closes=False,
                                   on_activate=lambda k=key: self.buy(k)))
-            b.append(self.email_field)
             if promo:
                 b.append(self._words(f"Have a promotion code? Choose {promo[0] if len(promo) == 1 else 'an option marked codes accepted'} "
                                      "and enter the code on Stripe's checkout page, under the price."))
@@ -143,7 +161,7 @@ class Paywall:
         row = Gtk.Box(spacing=10, margin_top=8, margin_bottom=8, margin_start=6)
         spin = Gtk.Spinner(spinning=True)
         row.append(spin)
-        row.append(self._words("Finish paying in your browser. This unlocks by itself as soon as Stripe confirms it."))
+        row.append(self._words("Finish checkout in your browser. This unlocks by itself as soon as Stripe confirms the order."))
         b.append(row)
         b.append(PanelRow("Cancel", icon="x", closes=False, on_activate=self._stop_waiting))
 
@@ -194,8 +212,17 @@ class Paywall:
 
     def buy(self, product: str):
         email = self.email_field.text if self.email_field is not None else self.billing.email
+        code = self.promotion_field.text.strip() if self.promotion_field is not None else ""
+        if code and not (self.catalog or {}).get(product, {}).get("scoped_promo_codes"):
+            self.toast("Promotion codes apply only to Lifetime. Clear the field to choose a different plan.", "error")
+            return
+        if self.waiting_for or getattr(self, "_starting_checkout", False):
+            return
+        self._starting_checkout = True
 
         def opened(result):
+            self._starting_checkout = False
+
             url, session = result
             self.open_uri(url)
             if not session:
@@ -207,7 +234,11 @@ class Paywall:
             cancel = self.cancel
             _bg(lambda: self.billing.wait_for_session(session, cancel), self._waited, self._wait_failed)
 
-        _bg(lambda: self.billing.checkout(product, email), opened, lambda m: self.toast(m, "error"))
+        def failed(message):
+            self._starting_checkout = False
+            self.toast(message, "error")
+
+        _bg(lambda: self.billing.checkout(product, email, code), opened, failed)
 
     def _waited(self, ok: bool):
         self.waiting_for = ""

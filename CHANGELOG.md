@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.1 (2026-11-19)
+
+- Combine the GitHub release checker with scoped lifetime promotion entry and exact purchased-plan labels.
+
 ## 1.2.0 (2026-11-19)
 
 - Update alerts: Hartmann Office watches its GitHub releases and tells you when a new version is out, with the release

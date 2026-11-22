@@ -3,7 +3,7 @@ schema_version = "0.2"
 [application]
 id = "com.charleshartmann.Office"
 name = "Hartmann Office"
-version = "1.2.0"
+version = "1.2.1"
 entrypoint = "src/main.py"
 
 [platform]
