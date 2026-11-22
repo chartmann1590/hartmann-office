@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.2 (2026-11-21)
+
+- Spreadsheets: typing straight into a cell lost the first character ("12" became "2", and "=SUM(A1:A2)" lost
+  its "=" and was kept as text). The key that starts the edit now reaches the cell.
+- The New button at the foot of the sidebar did nothing: its Document / Spreadsheet / Presentation / Template
+  panel was refused by the toolkit for having four choices. It opens again (as four tiles).
+
 ## 1.2.1 (2026-11-19)
 
 - Combine the GitHub release checker with scoped lifetime promotion entry and exact purchased-plan labels.

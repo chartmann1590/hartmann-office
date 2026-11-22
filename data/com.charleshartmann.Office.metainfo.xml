@@ -94,6 +94,7 @@
     <value key="org.projectluma.ApplicationContract">0.2</value>
   </custom>
   <releases>
+    <release version="1.2.2" date="2026-11-21"><description><p>Typing into a spreadsheet cell keeps the first character again, so values and formulas go in as typed, and the New button in the sidebar opens its menu again.</p></description></release>
     <release version="1.2.1" date="2026-11-19"><description><p>Keep GitHub update checks alongside scoped lifetime promotions and exact plan labels.</p></description></release>
     <release version="1.2.0" date="2026-11-19">
       <description>

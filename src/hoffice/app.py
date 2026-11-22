@@ -37,7 +37,7 @@ from .library import KIND_ICONS, KIND_NAMES, Library  # noqa: E402
 
 APP_ID = "com.charleshartmann.Office"
 APP_NAME = "Hartmann Office"
-VERSION = "1.2.1"
+VERSION = "1.2.2"
 PLACES = (("all", "All files", "folder"), ("document", "Documents", "file-text"),
           ("spreadsheet", "Spreadsheets", "table"), ("presentation", "Presentations", "monitor"),
           ("deleted", "Deleted", "trash-2"))
@@ -279,7 +279,8 @@ class Window(AppWindow):
                                StackedButton("table", "Spreadsheet", on_click=lambda: self._new_from_panel("spreadsheet")),
                                StackedButton("monitor", "Presentation",
                                              on_click=lambda: self._new_from_panel("presentation")),
-                               StackedButton("layout-template", "Template", on_click=self.ask_template)])
+                               StackedButton("layout-template", "Template", on_click=self.ask_template)],
+                              size="tile")  # four choices: appkit refuses four in the default size (ValueError, nothing opened)
         self.center.grow("new", trio)
 
     def _new_from_panel(self, kind):
@@ -870,7 +871,7 @@ class Window(AppWindow):
         entry = getattr(self, "_formula", None)
         if entry is None:
             return
-        if text.startswith("\0"):
+        if text.startswith("\x01"):  # typing over the cell (see Grid._key)
             entry.set_text(text[1:])
         else:
             entry.set_text(text)

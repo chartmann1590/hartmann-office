@@ -597,7 +597,9 @@ class SheetView(Gtk.Widget):
             return False
         ch = Gdk.keyval_to_unicode(keyval)
         if ch and ch >= 32 and not (state & Gdk.ModifierType.ALT_MASK):
-            self.emit("edit-requested", "\0" + chr(ch))  # start typing over the cell
+            # start typing over the cell. "\x01", not "\0": a GObject str argument is a C string, so "\0" + key
+            # arrived as "" and the first key was lost ("12" became "2", "=SUM(...)" lost its "=").
+            self.emit("edit-requested", "\x01" + chr(ch))
             return True
         return False
 
